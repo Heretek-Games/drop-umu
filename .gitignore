@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-package/
+dist-packages/
+*.dropplugin
+*.dropplugin.sha256
+.DS_Store
+*.log

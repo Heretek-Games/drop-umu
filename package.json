@@ -1,0 +1,29 @@
+{
+  "name": "drop-umu",
+  "version": "0.1.0",
+  "description": "UMU Launcher (umu-run) manager and bundled Proton compatibility runner for Drop.",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "rm -rf dist && tsc && drop-plugin sign .",
+    "test": "node --test dist/test/*.js",
+    "typecheck": "tsc --noEmit",
+    "sign": "drop-plugin sign .",
+    "lint": "eslint .",
+    "pack": "drop-plugin pack . ./dist-package",
+    "install:umu": "bash scripts/install-umu.sh",
+    "fetch:upstream": "node scripts/download-upstream.mjs"
+  },
+  "dependencies": {
+    "@droposs/plugin-sdk": "^0.6.1"
+  },
+  "devDependencies": {
+    "@droposs/plugin-cli": "^0.6.1",
+    "@types/node": "^22.0.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.68.0"
+  },
+  "license": "MIT"
+}

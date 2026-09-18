@@ -1,16 +1,16 @@
 import type {
   ClientPlugin,
   ClientPluginContext,
-  LaunchContext,
   PluginMetadata,
 } from "@droposs/plugin-sdk";
 import { UMU_RUN_VERSION } from "./embedded-umu.js";
-import { validateUmuLaunch } from "./hook.js";
+import { UmuRunnerProvider } from "./runner.js";
 import { createGameBadge, createSettingsTab } from "./ui.js";
 
 export * from "./embedded-umu.js";
 export * from "./hook.js";
 export * from "./installer.js";
+export * from "./runner.js";
 export * from "./types.js";
 export * from "./ui.js";
 
@@ -28,24 +28,24 @@ export class DropUmuPlugin implements ClientPlugin {
     targets: ["client"],
     capabilities: [
       "ui:slot",
-      "game:launch-hook",
+      "game:runner",
       "system:command",
       "client:storage",
     ],
   };
 
+  private unregisterRunner: (() => void) | undefined;
+
   async init(ctx: ClientPluginContext): Promise<void> {
-    // 1. Register pre-launch validation hook
-    ctx.registerLaunchHook({
-      stage: "pre-launch:validate",
-      order: 10,
-      execute: async (context: LaunchContext) => {
-        await validateUmuLaunch(context, {
-          system: ctx.system,
-          logger: ctx.logger,
-        });
-      },
-    });
+    // 1. Register the UMU compatibility runner (host applies the overrides —
+    //    no pre-launch hook or launch-command mutation).
+    this.unregisterRunner = ctx.registerRunnerProvider?.(
+      new UmuRunnerProvider({
+        system: ctx.system,
+        storage: ctx.storage,
+        logger: ctx.logger,
+      }),
+    );
 
     // 2. Register settings tab under Extension Settings
     ctx.registerSlot("settings:tabs", createSettingsTab(ctx), {
@@ -63,7 +63,8 @@ export class DropUmuPlugin implements ClientPlugin {
   }
 
   async teardown(): Promise<void> {
-    // Teardown logic if needed
+    this.unregisterRunner?.();
+    this.unregisterRunner = undefined;
   }
 }
 

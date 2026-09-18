@@ -4,7 +4,7 @@ UMU Launcher (`umu-run`) manager and bundled Proton compatibility runner for Dro
 
 ## Purpose & Scope
 
-This repository provides a self-contained Drop desktop plugin that bundles, installs, and manages [umu-launcher](https://github.com/Open-Wine-Components/umu-launcher) (`umu-run`). It enables one-click installation into `~/.local/bin/umu-run` and provides pre-launch validation for Windows games running under Proton.
+This repository provides a self-contained Drop desktop plugin that bundles, installs, and manages [umu-launcher](https://github.com/Open-Wine-Components/umu-launcher) (`umu-run`). It enables one-click installation into `~/.local/bin/umu-run` and launches Windows titles through UMU/Proton via the host `game:runner` SPI (`RunnerProvider.detect()` / `resolveLaunch()`), with no pre-launch hook.
 
 ## Commands
 
@@ -17,5 +17,5 @@ npm run lint
 npm run pack
 ```
 
-Built on `@droposs/plugin-sdk` (plugin API v2), resolved from npm registry (`^0.6.1`).
+Built on `@droposs/plugin-sdk` (plugin API v2), resolved from npm registry (`^0.7.0`).
 Controlled by `.sdk-scope.json` and `scripts/switch-sdk-scope.mjs`.

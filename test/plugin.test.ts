@@ -5,21 +5,21 @@ import { DropUmuPlugin } from "../src/index.js";
 
 const CAPABILITIES = [
   "ui:slot",
-  "game:launch-hook",
+  "game:runner",
   "system:command",
   "client:storage",
 ] as const;
 
-test("drop-umu registers launch hook and UI slots on init", async () => {
+test("drop-umu registers the UMU runner and UI slots on init", async () => {
   const ctx = new MockClientPluginContext("drop-umu", [...CAPABILITIES]);
   const plugin = new DropUmuPlugin();
 
   await plugin.init(ctx);
 
-  // Assert launch hook
-  assert.equal(ctx.launchHooks.length, 1);
-  assert.equal(ctx.launchHooks[0].stage, "pre-launch:validate");
-  assert.equal(ctx.launchHooks[0].order, 10);
+  // Assert runner provider
+  assert.equal(ctx.launchHooks.length, 0);
+  assert.equal(ctx.runnerProviders.length, 1);
+  assert.equal(ctx.runnerProviders[0].id, "drop-umu");
 
   // Assert settings slot
   const settingsSlots = ctx.registeredSlots.get("settings:tabs");
@@ -38,11 +38,15 @@ test("drop-umu registers launch hook and UI slots on init", async () => {
   assert.equal(plugin.metadata.id, "drop-umu");
   assert.equal(plugin.metadata.version, "0.1.0");
   assert.equal(plugin.metadata.apiVersion, 2);
+  assert.ok(plugin.metadata.capabilities?.includes("game:runner"));
+  assert.ok(!plugin.metadata.capabilities?.includes("game:launch-hook"));
   assert.deepEqual(plugin.metadata.targets, ["client"]);
 });
 
-test("drop-umu teardown executes cleanly", async () => {
+test("drop-umu teardown unregisters the runner and executes cleanly", async () => {
+  const ctx = new MockClientPluginContext("drop-umu", [...CAPABILITIES]);
   const plugin = new DropUmuPlugin();
+  await plugin.init(ctx);
   await plugin.teardown();
-  assert.ok(true);
+  assert.equal(ctx.runnerProviders.length, 0);
 });

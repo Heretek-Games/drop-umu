@@ -44,7 +44,7 @@ async function main() {
   mkdirSync(binDir, { recursive: true });
   mkdirSync(srcDir, { recursive: true });
 
-  const downloadCmd = `curl -sL "${asset.browser_download_url}" | tar -x -C "${binDir}" --strip-components=1 umu/umu-run`;
+  const downloadCmd = `curl --fail -sL "${asset.browser_download_url}" | tar -x -C "${binDir}" --strip-components=1 umu/umu-run`;
   execSync(downloadCmd, { stdio: "inherit" });
 
   const binPath = path.join(binDir, "umu-run");
@@ -57,6 +57,12 @@ async function main() {
 
   const bytes = readFileSync(binPath);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
+  if (asset.digest && asset.digest.startsWith("sha256:")) {
+    const expected = asset.digest.replace("sha256:", "").toLowerCase();
+    if (sha256.toLowerCase() !== expected) {
+      throw new Error(`SHA256 digest mismatch: expected ${expected}, got ${sha256}`);
+    }
+  }
   const base64 = bytes.toString("base64");
 
   console.log(`Binary SHA-256: ${sha256} (${bytes.length} bytes)`);

@@ -38,6 +38,11 @@ jobs:
       - name: Validate manifest
         run: npx --no-install drop-plugin validate .
 
+      - name: Sign plugin bundle
+        run: npx --no-install drop-plugin sign .
+        env:
+          DROP_PLUGIN_SIGNING_KEY: ${{ secrets.DROP_PLUGIN_SIGNING_KEY }}
+
       - name: Pack plugin archive
         run: npx --no-install drop-plugin pack . ./dist-package
 
@@ -50,7 +55,7 @@ jobs:
           sha256sum "$FILE" > "$FILE.sha256"
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@c062e08bd53287442461d858b10b3081c792ec6b # v2.0.12
         with:
           files: |
             ${{ steps.pkg.outputs.path }}
@@ -58,3 +63,4 @@ jobs:
           name: ${{ steps.pkg.outputs.name }}
           prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
+

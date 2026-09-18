@@ -1,5 +1,5 @@
 import type { ClientPluginSystem } from "@droposs/plugin-sdk";
-import { UMU_RUN_BASE64, UMU_RUN_VERSION } from "./embedded-umu.js";
+import { UMU_RUN_BASE64, UMU_RUN_SHA256, UMU_RUN_VERSION } from "./embedded-umu.js";
 import type { InstallOptions, InstallResult, UmuReleaseInfo, UmuStatus } from "./types.js";
 
 export const DEFAULT_INSTALL_PATH = "~/.local/bin/umu-run";
@@ -83,13 +83,33 @@ export async function installBundledUmu(
   options?: InstallOptions,
 ): Promise<InstallResult> {
   const targetPath = options?.targetPath || DEFAULT_INSTALL_PATH;
+  const force = options?.force ? "1" : "0";
 
-  // Python one-liner to write base64 data to target path and chmod 0o755
+  // Split base64 payload into chunks below Linux MAX_ARG_STRLEN (131072)
+  const CHUNK_SIZE = 60_000;
+  const chunks: string[] = [];
+  for (let i = 0; i < UMU_RUN_BASE64.length; i += CHUNK_SIZE) {
+    chunks.push(UMU_RUN_BASE64.slice(i, i + CHUNK_SIZE));
+  }
+
+  // Python staging script with sha256 check, force flag support, and chunked args
   const pythonScript = [
-    "import base64, os, sys",
+    "import base64, hashlib, os, sys",
     "target = os.path.expanduser(sys.argv[1])",
+    "force = sys.argv[2] == '1'",
+    "expected_sha256 = sys.argv[3]",
+    "if os.path.exists(target) and not force:",
+    "    print(f'EXISTS:{target}')",
+    "    sys.exit(0)",
+    "data_b64 = ''.join(sys.argv[4:])",
+    "if not data_b64 and not sys.stdin.isatty():",
+    "    data_b64 = sys.stdin.read().strip()",
+    "data = base64.b64decode(data_b64)",
+    "digest = hashlib.sha256(data).hexdigest()",
+    "if digest.lower() != expected_sha256.lower():",
+    "    print(f'SHA256_MISMATCH: expected {expected_sha256}, got {digest}', file=sys.stderr)",
+    "    sys.exit(2)",
     "os.makedirs(os.path.dirname(target), exist_ok=True)",
-    "data = base64.b64decode(sys.argv[2])",
     "with open(target, 'wb') as f:",
     "    f.write(data)",
     "os.chmod(target, 0o755)",
@@ -101,7 +121,9 @@ export async function installBundledUmu(
       "-c",
       pythonScript,
       targetPath,
-      UMU_RUN_BASE64,
+      force,
+      UMU_RUN_SHA256,
+      ...chunks,
     ]);
 
     if (res.code !== 0) {

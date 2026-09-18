@@ -109,6 +109,13 @@ test("installBundledUmu executes python staging script", async () => {
   assert.equal(result.path, "~/.local/bin/umu-run");
   assert.equal(ctx.systemCommand.calls.length, 1);
   assert.equal(ctx.systemCommand.calls[0].bin, "python3");
+
+  const args = ctx.systemCommand.calls[0].args;
+  assert.ok(args.length >= 5, "payload should be chunked into multiple args");
+  assert.equal(args[3], "0"); // force = false
+  for (const arg of args) {
+    assert.ok(arg.length < 100_000, `arg length ${arg.length} must not exceed 100KB`);
+  }
 });
 
 test("checkUpstreamRelease fetches release info using mock fetch", async () => {

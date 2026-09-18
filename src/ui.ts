@@ -92,6 +92,149 @@ export function createSettingsTab(ctx: ClientPluginContext) {
         }
       },
     },
+    render() {
+      const g = globalThis as Record<string, any>;
+      const vue = g.Vue ?? g.window?.Vue;
+      const self = this as any;
+      const h = typeof vue?.h === "function" ? vue.h : null;
+
+      if (!h) {
+        return {
+          type: "div",
+          props: { class: "rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 space-y-4" },
+          children: "UMU Launcher & Proton Runner",
+        };
+      }
+
+      const statusBadge = self.status && self.status.installed
+        ? h(
+            "span",
+            {
+              class:
+                "rounded bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-medium text-emerald-300 uppercase tracking-wide",
+            },
+            `Installed (v${self.status.version || self.status.bundledVersion})`,
+          )
+        : h(
+            "span",
+            {
+              class:
+                "rounded bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[10px] font-medium text-amber-300 uppercase tracking-wide",
+            },
+            "Not Installed",
+          );
+
+      const header = h(
+        "div",
+        { class: "flex items-center justify-between border-b border-zinc-800 pb-3" },
+        [
+          h("div", { class: "flex items-center gap-x-2" }, [
+            h("h4", { class: "text-sm font-semibold text-zinc-100" }, "UMU Launcher & Proton Runner"),
+            statusBadge,
+          ]),
+          h("div", { class: "flex items-center gap-x-2" }, [
+            h(
+              "button",
+              {
+                type: "button",
+                disabled: self.loading || self.installing || self.checkingUpdates,
+                class:
+                  "inline-flex items-center rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 transition disabled:opacity-50",
+                onClick: () => self.handleCheckUpdates(),
+              },
+              self.checkingUpdates ? "Checking..." : "Check Updates",
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                disabled: self.loading || self.installing,
+                class:
+                  "inline-flex items-center rounded-md bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-500 transition disabled:opacity-50",
+                onClick: () => self.handleInstall(),
+              },
+              self.installing
+                ? "Installing..."
+                : self.status && self.status.installed
+                ? "Reinstall Bundled"
+                : "Install UMU Launcher",
+            ),
+          ]),
+        ],
+      );
+
+      const description = h(
+        "p",
+        { class: "text-xs text-zinc-400" },
+        "UMU (Unified Wine Launcher) is Valve's Steam Runtime container system adapted for running Windows games via Proton outside of Steam.",
+      );
+
+      const children: any[] = [header, description];
+
+      if (self.error) {
+        children.push(
+          h(
+            "div",
+            { class: "rounded-md bg-red-600/10 p-3 border border-red-500/20 text-xs text-red-400" },
+            self.error,
+          ),
+        );
+      }
+      if (self.message) {
+        children.push(
+          h(
+            "div",
+            { class: "rounded-md bg-emerald-600/10 p-3 border border-emerald-500/20 text-xs text-emerald-400" },
+            self.message,
+          ),
+        );
+      }
+
+      if (self.status) {
+        const runnerStatusBox = h(
+          "div",
+          { class: "rounded-lg bg-zinc-950/60 p-3 border border-zinc-800/80 space-y-1" },
+          [
+            h("span", { class: "text-zinc-500 uppercase tracking-wider text-[10px] font-semibold" }, "Runner Status"),
+            h(
+              "p",
+              { class: "font-mono text-zinc-200" },
+              self.status.installed
+                ? `Available in $PATH (${self.status.version || "unknown"})`
+                : "Not detected in $PATH",
+            ),
+            h("p", { class: "text-[11px] text-zinc-500" }, `Bundled zipapp version: v${self.status.bundledVersion}`),
+          ],
+        );
+
+        const hostEnvBox = h(
+          "div",
+          { class: "rounded-lg bg-zinc-950/60 p-3 border border-zinc-800/80 space-y-1" },
+          [
+            h("span", { class: "text-zinc-500 uppercase tracking-wider text-[10px] font-semibold" }, "Host Environment"),
+            h(
+              "p",
+              { class: "font-mono text-zinc-200" },
+              self.status.pythonAvailable ? `Python ${self.status.pythonVersion || "3.x"}` : "Python 3 not found",
+            ),
+            h("p", { class: "text-[11px] text-zinc-500" }, "Target path: ~/.local/bin/umu-run"),
+          ],
+        );
+
+        children.push(
+          h("div", { class: "grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs" }, [
+            runnerStatusBox,
+            hostEnvBox,
+          ]),
+        );
+      }
+
+      return h(
+        "div",
+        { class: "rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 space-y-4" },
+        children,
+      );
+    },
     template: `
       <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 space-y-4">
         <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
@@ -174,6 +317,23 @@ export function createGameBadge() {
     props: {
       game: { type: Object, required: false },
       status: { type: Object, required: false },
+    },
+    render() {
+      const g = globalThis as Record<string, any>;
+      const vue = g.Vue ?? g.window?.Vue;
+      const props = {
+        class:
+          "inline-flex items-center gap-x-1 rounded bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 text-[10px] font-medium text-blue-300 uppercase tracking-wide",
+        title: "Launches using UMU Launcher with Proton",
+      };
+      if (typeof vue?.h === "function") {
+        return vue.h("span", props, "UMU Proton");
+      }
+      return {
+        type: "span",
+        props,
+        children: "UMU Proton",
+      };
     },
     template: `
       <span

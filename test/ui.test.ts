@@ -46,8 +46,35 @@ test("createSettingsTab defines the Vue options component", async () => {
   assert.equal(instance.status?.version, UMU_RUN_VERSION);
 });
 
-test("createGameBadge returns expected badge markup", () => {
+test("createGameBadge returns expected badge markup and render function", () => {
   const badge = createGameBadge();
   assert.equal(badge.name, "UmuGameBadge");
   assert.match(badge.template, /UMU Proton/);
+  assert.equal(typeof badge.render, "function");
+  const rendered = badge.render();
+  assert.equal((rendered as any).type, "span");
+  assert.match((rendered as any).children, /UMU Proton/);
+});
+
+test("createSettingsTab render function executes without runtime compiler", () => {
+  const ctx = new MockClientPluginContext("drop-umu", [...CAPABILITIES]);
+  const tab = createSettingsTab(ctx);
+  assert.equal(typeof tab.render, "function");
+  const instance = {
+    ...tab.data(),
+    status: {
+      installed: true,
+      version: "1.4.4",
+      bundledVersion: "1.4.4",
+      isBundledVersion: true,
+      pythonAvailable: true,
+      pythonVersion: "3.14.7",
+    },
+    error: null,
+    message: null,
+    handleInstall: () => {},
+    handleCheckUpdates: () => {},
+  };
+  const rendered = tab.render.call(instance);
+  assert.ok(rendered);
 });
